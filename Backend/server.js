@@ -7,7 +7,7 @@ require("dotenv").config()
 
 const app = express()
 app.use(cors({
-    origin: "http://localhost:5173"
+    origin: ["https://mern-restaurant-frontend.netlify.app", "http://localhost:8765"]
 }))
 
 app.use(express.json())
