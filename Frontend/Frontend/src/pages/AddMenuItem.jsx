@@ -1,11 +1,27 @@
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import api from "../api/axios"
+import {
+  Box,
+  TextField,
+  Select,
+  MenuItem as SelectOption,
+  InputLabel,
+  FormControl,
+  Switch,
+  FormControlLabel,
+  Button,
+  Alert,
+  InputAdornment,
+} from "@mui/material"
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined"
+import { t } from "../theme"
 
 function AddMenuItem() {
   const navigate = useNavigate()
   const [categories, setCategories] = useState([])
   const [error, setError] = useState("")
+  const [submitting, setSubmitting] = useState(false)
 
   const [name, setName] = useState("")
   const [price, setPrice] = useState("")
@@ -35,50 +51,101 @@ function AddMenuItem() {
       return
     }
 
+    setSubmitting(true)
     try {
       await api.post("/menu-items", { name, price: Number(price), category, image, description, available })
       navigate("/menu")
     } catch (err) {
       setError(err.response?.data?.message || "Xatolik yuz berdi")
+      setSubmitting(false)
     }
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Yangi mahsulot qo'shish</h1>
+    <Box sx={{ maxWidth: 560 }}>
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        sx={{
+          backgroundColor: t.surface,
+          border: `1px solid ${t.sand}`,
+          borderTop: `3px solid ${t.copper}`,
+          p: { xs: 2.5, sm: 4 },
+          display: "flex",
+          flexDirection: "column",
+          gap: 2.5,
+        }}
+      >
+        <TextField
+          label="Mahsulot nomi"
+          placeholder="Masalan: Osh"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          fullWidth
+        />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-md">
-        <input type="text" placeholder="Mahsulot nomi" value={name} onChange={(e) => setName(e.target.value)} className="border p-2 rounded" />
+        <TextField
+          label="Narxi"
+          type="number"
+          placeholder="0"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          fullWidth
+          slotProps={{
+            input: { endAdornment: <InputAdornment position="end">so'm</InputAdornment> },
+          }}
+        />
 
-        <input type="number" placeholder="Narxi" value={price} onChange={(e) => setPrice(e.target.value)} className="border p-2 rounded" />
+        <FormControl fullWidth>
+          <InputLabel id="category-label">Kategoriyani tanlang</InputLabel>
+          <Select
+            labelId="category-label"
+            label="Kategoriyani tanlang"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {categories.map((cat) => (
+              <SelectOption key={cat._id} value={cat._id}>{cat.name}</SelectOption>
+            ))}
+          </Select>
+        </FormControl>
 
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="border p-2 rounded">
-          <option value="">Kategoriyani tanlang</option>
-          {categories.map((cat) => (
-            <option key={cat._id} value={cat._id}>{cat.name}</option>
-          ))}
-        </select>
+        <TextField
+          label="Rasm manzili (ixtiyoriy)"
+          placeholder="https://..."
+          value={image}
+          onChange={(e) => setImage(e.target.value)}
+          fullWidth
+        />
 
-        <input type="text" placeholder="Rasm manzili (ixtiyoriy)" value={image} onChange={(e) => setImage(e.target.value)} className="border p-2 rounded" />
+        <TextField
+          label="Tavsif (ixtiyoriy)"
+          placeholder="Taom haqida qisqacha ma'lumot"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          fullWidth
+          multiline
+          minRows={3}
+        />
 
-        <textarea placeholder="Tavsif (ixtiyoriy)" value={description} onChange={(e) => setDescription(e.target.value)} className="border p-2 rounded" />
+        <FormControlLabel
+          control={<Switch checked={available} onChange={(e) => setAvailable(e.target.checked)} />}
+          label="Mavjud"
+        />
 
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={available} onChange={(e) => setAvailable(e.target.checked)} />
-          Mavjud
-        </label>
+        {error && <Alert severity="error">{error}</Alert>}
 
-        {error && <p className="text-red-600">{error}</p>}
-
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
-          Qo'shish
-        </button>
-      </form>
-    </div>
+        <Box sx={{ display: "flex", gap: 1.5, pt: 1 }}>
+          <Button type="submit" variant="contained" disabled={submitting} sx={{ flexGrow: 1 }}>
+            {submitting ? "Qo'shilmoqda..." : "Qo'shish"}
+          </Button>
+          <Button component={Link} to="/menu" color="inherit" startIcon={<ArrowBackOutlinedIcon />}>
+            Menyuga qaytish
+          </Button>
+        </Box>
+      </Box>
+    </Box>
   )
-
-
-
 }
 
 export default AddMenuItem

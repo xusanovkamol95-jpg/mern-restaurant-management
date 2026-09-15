@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
-import Navbar from "./components/Navbar"
+import Layout from "./components/Layout"
 import Dashboard from "./pages/Dashboard"
 import Menu from "./pages/Menu"
 import AddMenuItem from "./pages/AddMenuItem"
@@ -10,8 +10,7 @@ import About from "./pages/About"
 function App() {
   return (
     <BrowserRouter>
-      <Navbar />
-      <div className="p-6">
+      <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/menu" element={<Menu />} />
@@ -20,7 +19,7 @@ function App() {
           <Route path="/categories" element={<Categories />} />
           <Route path="/about" element={<About />} />
         </Routes>
-      </div>
+      </Layout>
     </BrowserRouter>
   )
 }

@@ -1,9 +1,125 @@
 import { Link } from "react-router-dom"
 import api from "../api/axios"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import {
+  Box,
+  Typography,
+  TextField,
+  Select,
+  MenuItem as SelectOption,
+  InputAdornment,
+  Button,
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar,
+  Alert,
+} from "@mui/material"
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined"
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined"
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined"
+import RestaurantOutlinedIcon from "@mui/icons-material/RestaurantOutlined"
+import { t } from "../theme"
 
+function formatPrice(value) {
+  return new Intl.NumberFormat("uz-UZ").format(value)
+}
 
+function MenuItemCard({ item, onDelete }) {
+  return (
+    <Box
+      sx={{
+        backgroundColor: t.surface,
+        border: `1px solid ${t.sand}`,
+        display: "flex",
+        flexDirection: "column",
+        transition: "border-color 120ms ease",
+        "&:hover": { borderColor: t.ink },
+      }}
+    >
+      <Box
+        sx={{
+          height: 128,
+          backgroundColor: t.sageLight,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+        }}
+      >
+        {item.image ? (
+          <Box
+            component="img"
+            src={item.image}
+            alt={item.name}
+            sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+            onError={(e) => { e.target.style.display = "none" }}
+          />
+        ) : (
+          <RestaurantOutlinedIcon sx={{ fontSize: 30, color: t.sage, opacity: 0.5 }} />
+        )}
+      </Box>
 
+      <Box sx={{ p: 2.25, display: "flex", flexDirection: "column", gap: 1, flexGrow: 1 }}>
+        <Typography sx={{ fontSize: 12.5, color: t.mute }}>
+          {item.category?.name || "Kategoriyasiz"}
+        </Typography>
+
+        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+          <Typography sx={{ fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: 17, color: t.ink }}>
+            {item.name}
+          </Typography>
+          <Box sx={{ flexGrow: 1, borderBottom: `1px dotted ${t.sand}`, mb: "3px" }} />
+          <Typography sx={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 15, color: t.ink, whiteSpace: "nowrap" }}>
+            {formatPrice(item.price)} so'm
+          </Typography>
+        </Box>
+
+        {item.description && (
+          <Typography sx={{ fontSize: 13, color: t.mute, lineHeight: 1.4 }}>
+            {item.description}
+          </Typography>
+        )}
+
+        <Box sx={{ mt: 0.5 }}>
+          <Chip
+            size="small"
+            label={item.available ? "Mavjud" : "Tugagan"}
+            sx={{
+              backgroundColor: item.available ? t.sageLight : t.rustLight,
+              color: item.available ? t.sage : t.rust,
+              fontSize: 12.5,
+            }}
+          />
+        </Box>
+
+        <Box sx={{ display: "flex", gap: 1, mt: "auto", pt: 1.5 }}>
+          <Button
+            component={Link}
+            to={`/edit-menu-item/${item._id}`}
+            size="small"
+            startIcon={<EditOutlinedIcon sx={{ fontSize: 16 }} />}
+            variant="outlined"
+            sx={{ flexGrow: 1 }}
+          >
+            Tahrirlash
+          </Button>
+          <IconButton
+            size="small"
+            onClick={() => onDelete(item)}
+            sx={{ border: `1.5px solid ${t.rust}`, borderRadius: "3px", color: t.rust }}
+          >
+            <DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Box>
+      </Box>
+    </Box>
+  )
+}
 
 function Menu() {
   const [menuItems, setMenuItems] = useState([])
@@ -11,7 +127,8 @@ function Menu() {
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [sortOption, setSortOption] = useState("name-asc")
-
+  const [pendingDelete, setPendingDelete] = useState(null)
+  const [toast, setToast] = useState(null)
 
   const fetchMenuItems = async () => {
     try {
@@ -22,7 +139,6 @@ function Menu() {
     }
   }
 
-
   const fetchCategories = async () => {
     try {
       const res = await api.get("/categories")
@@ -32,85 +148,145 @@ function Menu() {
     }
   }
 
-
   useEffect(() => {
     fetchMenuItems()
     fetchCategories()
   }, [])
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Rostdan ham o'chirmoqchimisiz?")) return
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
     try {
-      await api.delete(`/menu-items/${id}`)
+      await api.delete(`/menu-items/${pendingDelete._id}`)
+      setPendingDelete(null)
+      setToast({ severity: "success", message: "Mahsulot o'chirildi" })
       fetchMenuItems()
     } catch (error) {
       console.log(error.message)
+      setToast({ severity: "error", message: "O'chirishda xatolik yuz berdi" })
     }
   }
 
-  let filtered = menuItems.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase())
-  )
-
-  filtered = [...filtered].sort((a, b) => {
-    if (sortOption === "name-asc") return a.name.localeCompare(b.name)
-    if (sortOption === "name-desc") return b.name.localeCompare(a.name)
-    if (sortOption === "price-asc") return a.price - b.price
-    if (sortOption === "price-desc") return b.price - a.price
-    return 0
-  })
-
+  const filtered = useMemo(() => {
+    let list = menuItems.filter((item) =>
+      item.name.toLowerCase().includes(search.toLowerCase())
+    )
+    if (selectedCategory !== "All") {
+      list = list.filter((item) => item.category?._id === selectedCategory)
+    }
+    return [...list].sort((a, b) => {
+      if (sortOption === "name-asc") return a.name.localeCompare(b.name)
+      if (sortOption === "name-desc") return b.name.localeCompare(a.name)
+      if (sortOption === "price-asc") return a.price - b.price
+      if (sortOption === "price-desc") return b.price - a.price
+      return 0
+    })
+  }, [menuItems, search, selectedCategory, sortOption])
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Menyu</h1>
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 1.5,
+          alignItems: "center",
+          mb: 3.5,
+        }}
+      >
+        <TextField
+          placeholder="Nomi bo'yicha qidirish..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ minWidth: 220, flexGrow: 1, maxWidth: 320 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchOutlinedIcon sx={{ fontSize: 19, color: t.mute }} />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
 
-      <div>
-        <input type="text" placeholder="Nomi boyicha qidirish..." value={search} onChange={(e) => setSearch(e.target.value)} className="border p-2 rounded" />
-        <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="border p-2 rounded">
-          <option value="All">Barcha kategoriyalar</option>
+        <Select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          sx={{ minWidth: 190 }}
+        >
+          <SelectOption value="All">Barcha kategoriyalar</SelectOption>
           {categories.map((cat) => (
-            <option key={cat._id} value={cat._id}>{cat.name}</option>
+            <SelectOption key={cat._id} value={cat._id}>{cat.name}</SelectOption>
           ))}
-        </select>
+        </Select>
 
-        <select value={sortOption} onChange={(e) => setSortOption(e.target.value)} className="border p-2 rounded">
-          <option value="name-asc">Nomi (A-Z)</option>
-          <option value="name-desc">Nomi (Z-A)</option>
-          <option value="price-asc">Narxi (arzon → qimmat)</option>
-          <option value="price-desc">Narxi (qimmat → arzon)</option>
-        </select>
+        <Select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+          sx={{ minWidth: 210 }}
+        >
+          <SelectOption value="name-asc">Nomi (A-Z)</SelectOption>
+          <SelectOption value="name-desc">Nomi (Z-A)</SelectOption>
+          <SelectOption value="price-asc">Narxi: arzon → qimmat</SelectOption>
+          <SelectOption value="price-desc">Narxi: qimmat → arzon</SelectOption>
+        </Select>
 
-        <Link to="/add-menu-item" className="bg-green-600 text-white px-4 py-2 rounded">
-          +Yangi mahsulot
-        </Link>
-      </div>
+        <Button
+          component={Link}
+          to="/add-menu-item"
+          variant="contained"
+          startIcon={<AddOutlinedIcon />}
+          sx={{ ml: { sm: "auto" } }}
+        >
+          Yangi mahsulot
+        </Button>
+      </Box>
 
       {filtered.length === 0 ? (
-        <p className="text-gray-500">Hech narsa topilmadi</p>
+        <Box
+          sx={{
+            border: `1px dashed ${t.sand}`,
+            py: 8,
+            textAlign: "center",
+            color: t.mute,
+          }}
+        >
+          <RestaurantOutlinedIcon sx={{ fontSize: 30, mb: 1, opacity: 0.5 }} />
+          <Typography>Hech narsa topilmadi</Typography>
+        </Box>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(3, 1fr)" },
+            gap: 2,
+          }}
+        >
           {filtered.map((item) => (
-            <div key={item._id} className="border rounded p-4 shadow">
-              <h3 className="text-lg font-bold">{item.name}</h3>
-              <p className="text-gray-600">{item.category?.name}</p>
-              <p className="font-semibold">{item.price} so'm</p>
-              <p className={item.available ? "text-green-600" : "text-red-600"}>
-                {item.available ? "Mavjud" : "Mavjud emas"}
-              </p>
-              <div className="flex gap-2 mt-3">
-                <Link to={`/edit-menu-item/${item._id}`} className="bg-yellow-500 text-white px-3 py-1 rounded">
-                  Tahrirlash
-                </Link>
-                <button onClick={() => handleDelete(item._id)} className="bg-red-600 text-white px-3 py-1 rounded">
-                  O'chirish
-                </button>
-              </div>
-            </div>
+            <MenuItemCard key={item._id} item={item} onDelete={setPendingDelete} />
           ))}
-        </div>
+        </Box>
       )}
-    </div>
+
+      <Dialog open={!!pendingDelete} onClose={() => setPendingDelete(null)}>
+        <DialogTitle sx={{ fontFamily: '"Fraunces", Georgia, serif' }}>
+          Mahsulotni o'chirish
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: t.mute }}>
+            "{pendingDelete?.name}" mahsulotini o'chirishni tasdiqlaysizmi? Bu amalni orqaga qaytarib bo'lmaydi.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5 }}>
+          <Button onClick={() => setPendingDelete(null)} color="inherit">Bekor qilish</Button>
+          <Button onClick={confirmDelete} variant="contained" color="error">O'chirish</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={!!toast} autoHideDuration={3000} onClose={() => setToast(null)}>
+        {toast && <Alert severity={toast.severity} onClose={() => setToast(null)}>{toast.message}</Alert>}
+      </Snackbar>
+    </Box>
   )
 }
 

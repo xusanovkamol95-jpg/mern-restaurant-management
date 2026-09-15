@@ -1,14 +1,74 @@
+import { Box, Typography } from "@mui/material"
+import RestaurantMenuOutlinedIcon from "@mui/icons-material/RestaurantMenuOutlined"
+import CodeOutlinedIcon from "@mui/icons-material/CodeOutlined"
+import { t } from "../theme"
+
+const STACK = [
+  { label: "MongoDB", detail: "Ma'lumotlar bazasi" },
+  { label: "Express", detail: "Backend server" },
+  { label: "React", detail: "Foydalanuvchi interfeysi" },
+  { label: "Node.js", detail: "Server muhiti" },
+]
+
 function About() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Biz haqimizda</h1>
-      <p className="text-gray-700 max-w-2xl">
-        Bu — restoran menyusini boshqarish tizimi. Ushbu ilova orqali kategoriyalar
-        va menyu mahsulotlarini qo'shish, tahrirlash, o'chirish hamda qidirish,
-        filtrlash va saralash imkoniyatlari mavjud. Loyiha MongoDB, Express,
-        React va Node.js (MERN stack) texnologiyalari asosida yaratilgan.
-      </p>
-    </div>
+    <Box sx={{ maxWidth: 720 }}>
+      <Box
+        sx={{
+          backgroundColor: t.surface,
+          border: `1px solid ${t.sand}`,
+          borderTop: `3px solid ${t.copper}`,
+          p: { xs: 3, sm: 4 },
+          mb: 3,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+          <RestaurantMenuOutlinedIcon sx={{ color: t.copper, fontSize: 24 }} />
+          <Typography variant="h5" sx={{ fontSize: 20, color: t.ink }}>
+            Menyu boshqaruv tizimi
+          </Typography>
+        </Box>
+        <Typography sx={{ color: t.mute, lineHeight: 1.7, fontSize: 15 }}>
+          Bu — restoran menyusini boshqarish tizimi. Ushbu ilova orqali kategoriyalar
+          va menyu mahsulotlarini qo'shish, tahrirlash, o'chirish hamda qidirish,
+          filtrlash va saralash imkoniyatlari mavjud.
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+        <CodeOutlinedIcon sx={{ fontSize: 18, color: t.mute }} />
+        <Typography sx={{ fontSize: 13.5, color: t.mute, fontWeight: 500 }}>
+          Texnologiyalar (MERN stack)
+        </Typography>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr)" },
+          gap: 1.5,
+        }}
+      >
+        {STACK.map((s) => (
+          <Box
+            key={s.label}
+            sx={{
+              backgroundColor: t.surface,
+              border: `1px solid ${t.sand}`,
+              borderLeft: `3px solid ${t.sage}`,
+              p: 2,
+            }}
+          >
+            <Typography sx={{ fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: 15.5, color: t.ink }}>
+              {s.label}
+            </Typography>
+            <Typography sx={{ fontSize: 12.5, color: t.mute, mt: 0.25 }}>
+              {s.detail}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+    </Box>
   )
 }
 
