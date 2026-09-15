@@ -17,6 +17,7 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  Skeleton,
 } from "@mui/material"
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined"
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined"
@@ -35,15 +36,18 @@ function MenuItemCard({ item, onDelete }) {
       sx={{
         backgroundColor: t.surface,
         border: `1px solid ${t.sand}`,
+        borderRadius: 1.5,
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
-        transition: "border-color 120ms ease",
-        "&:hover": { borderColor: t.ink },
+        transition: `transform 220ms ${t.ease}, box-shadow 220ms ${t.ease}, border-color 220ms ${t.ease}`,
+        "&:hover": { transform: "translateY(-3px)", boxShadow: t.shadowMd, borderColor: "transparent" },
+        "&:hover .menu-card-img": { transform: "scale(1.06)" },
       }}
     >
       <Box
         sx={{
-          height: 128,
+          height: 132,
           backgroundColor: t.sageLight,
           display: "flex",
           alignItems: "center",
@@ -54,9 +58,10 @@ function MenuItemCard({ item, onDelete }) {
         {item.image ? (
           <Box
             component="img"
+            className="menu-card-img"
             src={item.image}
             alt={item.name}
-            sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+            sx={{ width: "100%", height: "100%", objectFit: "cover", transition: `transform 400ms ${t.ease}` }}
             onError={(e) => { e.target.style.display = "none" }}
           />
         ) : (
@@ -88,11 +93,23 @@ function MenuItemCard({ item, onDelete }) {
         <Box sx={{ mt: 0.5 }}>
           <Chip
             size="small"
+            icon={
+              <Box
+                sx={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  backgroundColor: item.available ? t.sage : t.rust,
+                  ml: "8px !important",
+                }}
+              />
+            }
             label={item.available ? "Mavjud" : "Tugagan"}
             sx={{
               backgroundColor: item.available ? t.sageLight : t.rustLight,
               color: item.available ? t.sage : t.rust,
               fontSize: 12.5,
+              "& .MuiChip-icon": { color: "inherit" },
             }}
           />
         </Box>
@@ -111,12 +128,54 @@ function MenuItemCard({ item, onDelete }) {
           <IconButton
             size="small"
             onClick={() => onDelete(item)}
-            sx={{ border: `1.5px solid ${t.rust}`, borderRadius: "3px", color: t.rust }}
+            sx={{
+              border: `1.5px solid ${t.rust}`,
+              borderRadius: "4px",
+              color: t.rust,
+              "&:hover": { backgroundColor: t.rustLight },
+            }}
           >
             <DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
       </Box>
+    </Box>
+  )
+}
+
+function CategoryPills({ categories, selected, onSelect }) {
+  const items = [{ _id: "All", name: "Barchasi" }, ...categories]
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+      {items.map((cat) => {
+        const isActive = selected === cat._id
+        return (
+          <Box
+            key={cat._id}
+            component="button"
+            onClick={() => onSelect(cat._id)}
+            sx={{
+              cursor: "pointer",
+              border: `1.5px solid ${isActive ? t.ink : t.sand}`,
+              backgroundColor: isActive ? t.ink : t.surface,
+              color: isActive ? "#FFF" : t.ink,
+              borderRadius: 999,
+              px: 1.75,
+              py: 0.6,
+              fontSize: 13,
+              fontWeight: 500,
+              fontFamily: "inherit",
+              transition: `all 160ms ${t.ease}`,
+              "&:hover": {
+                borderColor: t.ink,
+                transform: "translateY(-1px)",
+              },
+            }}
+          >
+            {cat.name}
+          </Box>
+        )
+      })}
     </Box>
   )
 }
@@ -129,6 +188,7 @@ function Menu() {
   const [sortOption, setSortOption] = useState("name-asc")
   const [pendingDelete, setPendingDelete] = useState(null)
   const [toast, setToast] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const fetchMenuItems = async () => {
     try {
@@ -136,6 +196,8 @@ function Menu() {
       setMenuItems(res.data.menuitems || [])
     } catch (error) {
       console.log(error.message)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -184,15 +246,7 @@ function Menu() {
 
   return (
     <Box>
-      <Box
-        sx={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 1.5,
-          alignItems: "center",
-          mb: 3.5,
-        }}
-      >
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center", mb: 2.5 }}>
         <TextField
           placeholder="Nomi bo'yicha qidirish..."
           value={search}
@@ -208,17 +262,6 @@ function Menu() {
             },
           }}
         />
-
-        <Select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          sx={{ minWidth: 190 }}
-        >
-          <SelectOption value="All">Barcha kategoriyalar</SelectOption>
-          {categories.map((cat) => (
-            <SelectOption key={cat._id} value={cat._id}>{cat.name}</SelectOption>
-          ))}
-        </Select>
 
         <Select
           value={sortOption}
@@ -242,10 +285,21 @@ function Menu() {
         </Button>
       </Box>
 
-      {filtered.length === 0 ? (
+      <Box sx={{ mb: 3.5 }}>
+        <CategoryPills categories={categories} selected={selectedCategory} onSelect={setSelectedCategory} />
+      </Box>
+
+      {loading ? (
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "repeat(3, 1fr)" }, gap: 2 }}>
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} variant="rounded" height={280} sx={{ borderRadius: 1.5 }} />
+          ))}
+        </Box>
+      ) : filtered.length === 0 ? (
         <Box
           sx={{
             border: `1px dashed ${t.sand}`,
+            borderRadius: 1.5,
             py: 8,
             textAlign: "center",
             color: t.mute,

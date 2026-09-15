@@ -12,11 +12,13 @@ import {
   TableRow,
   TableCell,
   IconButton,
+  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Snackbar,
+  Skeleton,
 } from "@mui/material"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined"
@@ -31,6 +33,7 @@ function Categories() {
   const [error, setError] = useState("")
   const [pendingDelete, setPendingDelete] = useState(null)
   const [toast, setToast] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const fetchCategories = async () => {
     try {
@@ -38,6 +41,8 @@ function Categories() {
       setCategories(res.data.data)
     } catch (error) {
       console.log(error)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -102,6 +107,7 @@ function Categories() {
         sx={{
           backgroundColor: t.surface,
           border: `1px solid ${t.sand}`,
+          borderRadius: 1.5,
           borderTop: `3px solid ${t.copper}`,
           p: 3,
           mb: 3.5,
@@ -109,8 +115,17 @@ function Categories() {
           flexWrap: "wrap",
           gap: 1.5,
           alignItems: "flex-start",
+          transition: `box-shadow 200ms ${t.ease}`,
+          ...(editId && { boxShadow: `0 0 0 3px ${t.copperLight}` }),
         }}
       >
+        {editId && (
+          <Chip
+            size="small"
+            label="Tahrirlash rejimi"
+            sx={{ backgroundColor: t.copperLight, color: t.copperDark, width: "100%", justifyContent: "flex-start", fontSize: 12 }}
+          />
+        )}
         <TextField
           label="Kategoriya nomi"
           value={name}
@@ -135,39 +150,52 @@ function Categories() {
 
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
-      {categories.length === 0 ? (
-        <Box sx={{ border: `1px dashed ${t.sand}`, py: 8, textAlign: "center", color: t.mute }}>
+      {loading ? (
+        <Skeleton variant="rounded" height={220} sx={{ borderRadius: 1.5 }} />
+      ) : categories.length === 0 ? (
+        <Box sx={{ border: `1px dashed ${t.sand}`, borderRadius: 1.5, py: 8, textAlign: "center", color: t.mute }}>
           <LocalOfferOutlinedIcon sx={{ fontSize: 30, mb: 1, opacity: 0.5 }} />
           <Typography>Hozircha kategoriyalar yo'q</Typography>
         </Box>
       ) : (
-        <Box sx={{ backgroundColor: t.surface, border: `1px solid ${t.sand}` }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Nomi</TableCell>
-                <TableCell>Tavsifi</TableCell>
-                <TableCell align="right">Amallar</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {categories.map((cat) => (
-                <TableRow key={cat._id} hover>
-                  <TableCell sx={{ fontWeight: 600, color: t.ink }}>{cat.name}</TableCell>
-                  <TableCell sx={{ color: t.mute }}>{cat.description || "—"}</TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" onClick={() => handleEdit(cat)} sx={{ color: t.copper }}>
-                      <EditOutlinedIcon sx={{ fontSize: 19 }} />
-                    </IconButton>
-                    <IconButton size="small" onClick={() => setPendingDelete(cat)} sx={{ color: t.rust }}>
-                      <DeleteOutlineOutlinedIcon sx={{ fontSize: 19 }} />
-                    </IconButton>
-                  </TableCell>
+        <>
+          <Typography sx={{ fontSize: 13, color: t.mute, mb: 1 }}>
+            Jami {categories.length} ta kategoriya
+          </Typography>
+          <Box sx={{ backgroundColor: t.surface, border: `1px solid ${t.sand}`, borderRadius: 1.5, overflow: "hidden" }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nomi</TableCell>
+                  <TableCell>Tavsifi</TableCell>
+                  <TableCell align="right">Amallar</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Box>
+              </TableHead>
+              <TableBody>
+                {categories.map((cat, i) => (
+                  <TableRow
+                    key={cat._id}
+                    hover
+                    sx={{
+                      backgroundColor: editId === cat._id ? t.copperLight : i % 2 === 1 ? "rgba(34,30,25,0.02)" : "transparent",
+                    }}
+                  >
+                    <TableCell sx={{ fontWeight: 600, color: t.ink }}>{cat.name}</TableCell>
+                    <TableCell sx={{ color: t.mute }}>{cat.description || "—"}</TableCell>
+                    <TableCell align="right">
+                      <IconButton size="small" onClick={() => handleEdit(cat)} sx={{ color: t.copper, "&:hover": { backgroundColor: t.copperLight } }}>
+                        <EditOutlinedIcon sx={{ fontSize: 19 }} />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => setPendingDelete(cat)} sx={{ color: t.rust, "&:hover": { backgroundColor: t.rustLight } }}>
+                        <DeleteOutlineOutlinedIcon sx={{ fontSize: 19 }} />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+        </>
       )}
 
       <Dialog open={!!pendingDelete} onClose={() => setPendingDelete(null)}>

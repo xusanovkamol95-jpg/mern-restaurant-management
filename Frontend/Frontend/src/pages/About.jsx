@@ -17,6 +17,7 @@ function About() {
         sx={{
           backgroundColor: t.surface,
           border: `1px solid ${t.sand}`,
+          borderRadius: 1.5,
           borderTop: `3px solid ${t.copper}`,
           p: { xs: 3, sm: 4 },
           mb: 3,
@@ -55,8 +56,11 @@ function About() {
             sx={{
               backgroundColor: t.surface,
               border: `1px solid ${t.sand}`,
+              borderRadius: 1.5,
               borderLeft: `3px solid ${t.sage}`,
               p: 2,
+              transition: `transform 200ms ${t.ease}, box-shadow 200ms ${t.ease}`,
+              "&:hover": { transform: "translateY(-2px)", boxShadow: t.shadowSm },
             }}
           >
             <Typography sx={{ fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: 15.5, color: t.ink }}>

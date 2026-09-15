@@ -7,23 +7,53 @@ import HighlightOffOutlinedIcon from "@mui/icons-material/HighlightOffOutlined"
 import api from "../api/axios"
 import { t } from "../theme"
 
-function StatCard({ label, value, icon: Icon, accent, loading }) {
+function StatCard({ label, value, icon: Icon, accent, accentSoft, loading }) {
   return (
     <Box
       sx={{
         backgroundColor: t.surface,
         border: `1px solid ${t.sand}`,
-        borderLeft: `3px solid ${accent}`,
+        borderRadius: 1.5,
         p: 3,
         display: "flex",
         flexDirection: "column",
-        gap: 1.5,
+        gap: 2,
         minWidth: 0,
+        position: "relative",
+        overflow: "hidden",
+        transition: `transform 200ms ${t.ease}, box-shadow 200ms ${t.ease}, border-color 200ms ${t.ease}`,
+        "&:hover": {
+          transform: "translateY(-3px)",
+          boxShadow: t.shadowMd,
+          borderColor: "transparent",
+        },
+        "&::after": {
+          content: '""',
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          backgroundColor: accent,
+        },
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Typography sx={{ fontSize: 13.5, color: t.mute, fontWeight: 500 }}>{label}</Typography>
-        <Icon sx={{ fontSize: 20, color: accent }} />
+        <Box
+          sx={{
+            width: 34,
+            height: 34,
+            borderRadius: "8px",
+            backgroundColor: accentSoft,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <Icon sx={{ fontSize: 18, color: accent }} />
+        </Box>
       </Box>
       {loading ? (
         <Skeleton variant="text" width={64} height={44} />
@@ -40,6 +70,71 @@ function StatCard({ label, value, icon: Icon, accent, loading }) {
         >
           {value}
         </Typography>
+      )}
+    </Box>
+  )
+}
+
+function AvailabilityBar({ available, unavailable, loading }) {
+  const total = available + unavailable
+  const pct = total > 0 ? Math.round((available / total) * 100) : 0
+
+  return (
+    <Box
+      sx={{
+        backgroundColor: t.surface,
+        border: `1px solid ${t.sand}`,
+        borderRadius: 1.5,
+        p: 3,
+        mt: 2,
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", mb: 1.5 }}>
+        <Typography sx={{ fontFamily: '"Fraunces", Georgia, serif', fontWeight: 600, fontSize: 16, color: t.ink }}>
+          Mavjudlik nisbati
+        </Typography>
+        {!loading && (
+          <Typography sx={{ fontSize: 13.5, color: t.mute }}>
+            <Box component="span" sx={{ color: t.sage, fontWeight: 700 }}>{pct}%</Box> mavjud
+          </Typography>
+        )}
+      </Box>
+
+      {loading ? (
+        <Skeleton variant="rounded" height={10} sx={{ borderRadius: 999 }} />
+      ) : total === 0 ? (
+        <Typography sx={{ fontSize: 13.5, color: t.mute }}>Hali mahsulot qo'shilmagan</Typography>
+      ) : (
+        <>
+          <Box
+            sx={{
+              height: 10,
+              borderRadius: 999,
+              backgroundColor: t.rustLight,
+              overflow: "hidden",
+              display: "flex",
+            }}
+          >
+            <Box
+              sx={{
+                width: `${pct}%`,
+                backgroundColor: t.sage,
+                borderRadius: 999,
+                transition: `width 600ms ${t.ease}`,
+              }}
+            />
+          </Box>
+          <Box sx={{ display: "flex", gap: 3, mt: 1.75 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: t.sage }} />
+              <Typography sx={{ fontSize: 12.5, color: t.mute }}>Mavjud — {available}</Typography>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: t.rust }} />
+              <Typography sx={{ fontSize: 12.5, color: t.mute }}>Mavjud emas — {unavailable}</Typography>
+            </Box>
+          </Box>
+        </>
       )}
     </Box>
   )
@@ -77,16 +172,16 @@ function Dashboard() {
   }, [])
 
   const cards = [
-    { label: "Jami mahsulotlar", value: totalItems, icon: Inventory2OutlinedIcon, accent: t.copper },
-    { label: "Jami kategoriyalar", value: totalCategories, icon: LocalOfferOutlinedIcon, accent: t.sage },
-    { label: "Mavjud mahsulotlar", value: availableCount, icon: CheckCircleOutlineIcon, accent: t.sage },
-    { label: "Mavjud emas", value: unavailableCount, icon: HighlightOffOutlinedIcon, accent: t.rust },
+    { label: "Jami mahsulotlar", value: totalItems, icon: Inventory2OutlinedIcon, accent: t.copper, accentSoft: t.copperLight },
+    { label: "Jami kategoriyalar", value: totalCategories, icon: LocalOfferOutlinedIcon, accent: t.sage, accentSoft: t.sageLight },
+    { label: "Mavjud mahsulotlar", value: availableCount, icon: CheckCircleOutlineIcon, accent: t.sage, accentSoft: t.sageLight },
+    { label: "Mavjud emas", value: unavailableCount, icon: HighlightOffOutlinedIcon, accent: t.rust, accentSoft: t.rustLight },
   ]
 
   return (
     <Box>
       {error && (
-        <Alert severity="warning" sx={{ mb: 3, borderRadius: "3px" }}>
+        <Alert severity="warning" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
@@ -101,6 +196,8 @@ function Dashboard() {
           <StatCard key={card.label} {...card} loading={loading} />
         ))}
       </Box>
+
+      <AvailabilityBar available={availableCount} unavailable={unavailableCount} loading={loading} />
     </Box>
   )
 }

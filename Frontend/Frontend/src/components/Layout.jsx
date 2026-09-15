@@ -34,23 +34,25 @@ function SidebarContent({ onNavigate }) {
         display: "flex",
         flexDirection: "column",
         backgroundColor: t.panel,
+        backgroundImage: `radial-gradient(560px circle at 0% 0%, rgba(190,106,52,0.14), transparent 55%)`,
         color: "#F4EFE6",
       }}
     >
       <Box sx={{ px: 3, py: 3.5, display: "flex", alignItems: "center", gap: 1.5 }}>
         <Box
           sx={{
-            width: 34,
-            height: 34,
-            borderRadius: "3px",
-            border: `1.5px solid ${t.copper}`,
+            width: 36,
+            height: 36,
+            borderRadius: "6px",
+            background: `linear-gradient(155deg, ${t.copper}, ${t.copperDark})`,
+            boxShadow: t.glowCopper,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <RestaurantMenuOutlinedIcon sx={{ fontSize: 18, color: t.copper }} />
+          <RestaurantMenuOutlinedIcon sx={{ fontSize: 18, color: "#FFF" }} />
         </Box>
         <Box>
           <Typography
@@ -84,19 +86,33 @@ function SidebarContent({ onNavigate }) {
             {({ isActive }) => (
               <Box
                 sx={{
+                  position: "relative",
                   display: "flex",
                   alignItems: "center",
                   gap: 1.5,
-                  px: 1.75,
-                  py: 1.15,
-                  borderRadius: "3px",
+                  pl: 2,
+                  pr: 1.75,
+                  py: 1.1,
+                  borderRadius: "6px",
                   color: isActive ? "#FBF8F2" : "#B7BFB9",
                   backgroundColor: isActive ? "rgba(190,106,52,0.16)" : "transparent",
-                  borderLeft: isActive ? `3px solid ${t.copper}` : "3px solid transparent",
-                  transition: "background-color 120ms ease, color 120ms ease",
+                  transition: `background-color 160ms ${t.ease}, color 160ms ${t.ease}`,
+                  overflow: "hidden",
                   "&:hover": {
-                    backgroundColor: isActive ? "rgba(190,106,52,0.16)" : "rgba(255,255,255,0.05)",
+                    backgroundColor: isActive ? "rgba(190,106,52,0.18)" : "rgba(255,255,255,0.06)",
                     color: "#FBF8F2",
+                  },
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    left: 0,
+                    top: "18%",
+                    bottom: "18%",
+                    width: 3,
+                    borderRadius: 999,
+                    backgroundColor: t.copper,
+                    transform: isActive ? "scaleY(1)" : "scaleY(0)",
+                    transition: `transform 200ms ${t.ease}`,
                   },
                 }}
               >
@@ -195,10 +211,16 @@ function Layout({ children }) {
         {/* Page header */}
         {title && (
           <Box
+            key={`title-${location.pathname}`}
             sx={{
               px: { xs: 3, md: 5 },
               pt: { xs: 3, md: 5 },
               pb: 2.5,
+              animation: "pageEnter 320ms cubic-bezier(0.22,1,0.36,1)",
+              "@keyframes pageEnter": {
+                from: { opacity: 0, transform: "translateY(6px)" },
+                to: { opacity: 1, transform: "translateY(0)" },
+              },
             }}
           >
             <Typography
@@ -213,7 +235,21 @@ function Layout({ children }) {
           </Box>
         )}
 
-        <Box sx={{ px: { xs: 3, md: 5 }, pb: 6, flexGrow: 1 }}>{children}</Box>
+        <Box
+          key={`content-${location.pathname}`}
+          sx={{
+            px: { xs: 3, md: 5 },
+            pb: 6,
+            flexGrow: 1,
+            animation: "pageEnter 380ms cubic-bezier(0.22,1,0.36,1)",
+            "@keyframes pageEnter": {
+              from: { opacity: 0, transform: "translateY(8px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
+          }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   )
